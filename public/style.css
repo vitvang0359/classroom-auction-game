@@ -1,0 +1,780 @@
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap');
+
+:root {
+  --bg: #0b1020;
+  --panel: #151e35;
+  --panel2: #1c2945;
+  --text: #f4f7ff;
+  --muted: #9caac4;
+  --primary: #6578ff;
+  --cyan: #29d7ef;
+  --green: #24d18b;
+  --red: #ff526c;
+  --border: #30405f;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 15% 0%, #25356a 0, transparent 35%),
+    radial-gradient(circle at 90% 10%, #183d53 0, transparent 30%),
+    var(--bg);
+  color: var(--text);
+  font-family: 'Be Vietnam Pro', Arial, sans-serif;
+}
+
+button, input, textarea, select {
+  font: inherit;
+}
+
+button {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 18px;
+  background: var(--panel2);
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+  transition: .2s;
+}
+
+button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  filter: brightness(1.15);
+}
+
+button:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+input, textarea, select {
+  width: 100%;
+  padding: 13px;
+  margin: 7px 0 16px;
+  color: white;
+  background: #0c1428;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  outline: none;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: var(--cyan);
+}
+
+textarea {
+  min-height: 85px;
+  resize: vertical;
+}
+
+label {
+  display: block;
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 13px;
+}
+
+h1, h2, h3, p {
+  margin-top: 0;
+}
+
+.primary, .mobile-primary {
+  background: linear-gradient(135deg, #566cff, #8b51ef);
+  border: none;
+}
+
+.danger {
+  background: #762b43;
+  border-color: #a84360;
+}
+
+.secondary {
+  background: #263956;
+}
+
+.large {
+  padding: 16px 28px;
+  font-size: 16px;
+}
+
+.small {
+  padding: 7px 12px;
+  font-size: 12px;
+}
+
+.muted, .hint {
+  color: var(--muted);
+}
+
+.error {
+  color: var(--red);
+}
+
+/* ĐĂNG NHẬP */
+
+.login-screen {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.login-card {
+  width: min(420px, 100%);
+  padding: 35px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  text-align: center;
+  box-shadow: 0 20px 60px #0007;
+}
+
+/* THANH ĐẦU TRANG */
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 22px 5%;
+  border-bottom: 1px solid var(--border);
+  background: #10192be8;
+}
+
+.topbar h1 {
+  margin-bottom: 4px;
+  font-size: 24px;
+}
+
+.topbar small {
+  color: var(--cyan);
+  letter-spacing: 2px;
+}
+
+.navigation {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 15px 5%;
+  background: #10192b;
+  border-bottom: 1px solid var(--border);
+}
+
+.navigation button {
+  padding: 10px 15px;
+}
+
+/* NỘI DUNG */
+
+.page {
+  width: min(1200px, 92%);
+  margin: 30px auto;
+}
+
+.panel {
+  padding: 24px;
+  margin-bottom: 22px;
+  background: linear-gradient(145deg, #18243c, #111a2e);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  box-shadow: 0 12px 30px #0002;
+}
+
+.hero {
+  text-align: center;
+  padding: 70px 20px;
+  margin-bottom: 25px;
+  border: 1px solid #5267bd;
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at center, #4554ad 0, #202c59 40%, #121b35 100%);
+}
+
+.hero h2 {
+  font-size: clamp(28px, 5vw, 54px);
+  font-weight: 900;
+  letter-spacing: 2px;
+}
+
+.hero p {
+  color: #c9d5ff;
+}
+
+/* TỔ */
+
+.team-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 15px;
+}
+
+.team-card {
+  padding: 22px;
+  text-align: center;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--panel2);
+}
+
+.team-number {
+  color: var(--cyan);
+  font-weight: 800;
+  letter-spacing: 2px;
+}
+
+.hidden-points {
+  color: var(--muted);
+  font-size: 23px;
+  letter-spacing: 5px;
+  margin-top: 10px;
+}
+
+/* TIÊU ĐỀ */
+
+.section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.topic-label {
+  display: inline-block;
+  padding: 7px 13px;
+  color: var(--cyan);
+  background: #15364a;
+  border-radius: 30px;
+  font-weight: 800;
+}
+
+.phase-label {
+  padding: 10px 16px;
+  background: #27375b;
+  border-radius: 30px;
+  color: #dbe3ff;
+  font-weight: 800;
+}
+
+.game-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+/* ĐỒNG HỒ */
+
+.timer-panel {
+  padding: 30px;
+  text-align: center;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #293d75, #39265d);
+  border: 1px solid #596dc1;
+  margin-bottom: 20px;
+}
+
+.timer-caption {
+  letter-spacing: 3px;
+  color: #c6d6ff;
+  font-weight: 800;
+}
+
+.timer {
+  font-size: clamp(55px, 10vw, 95px);
+  font-weight: 900;
+  color: var(--cyan);
+  margin: 10px 0 20px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* TỔ THẮNG */
+
+.winner-panel {
+  text-align: center;
+}
+
+.winner-panel h1 {
+  color: #ffda68;
+  font-size: 35px;
+  margin: 10px 0 0;
+}
+
+/* CÂU HỎI */
+
+.question-panel {
+  padding: 30px;
+}
+
+.question-text {
+  font-size: 25px;
+  font-weight: 800;
+  line-height: 1.6;
+  padding: 20px 0;
+}
+
+.answer-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+.answer {
+  display: flex;
+  align-items: center;
+  text-align: left;
+  min-height: 75px;
+  gap: 15px;
+  padding: 18px;
+  background: #202e4c;
+  font-size: 16px;
+  border: 2px solid var(--border);
+}
+
+.answer b {
+  display: grid;
+  place-items: center;
+  min-width: 38px;
+  height: 38px;
+  background: #394e85;
+  border-radius: 10px;
+}
+
+.answer.correct {
+  background: #12563f;
+  border-color: var(--green);
+}
+
+.answer.wrong {
+  background: #702d40;
+  border-color: var(--red);
+}
+
+.result-message {
+  margin-top: 20px;
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.result-message.success {
+  color: var(--green);
+}
+
+.result-message.failure {
+  color: var(--red);
+}
+
+.control-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin: 25px 0;
+}
+
+.privacy-note {
+  text-align: center;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* SOẠN CÂU HỎI */
+
+.question-editor {
+  padding: 20px;
+  margin: 18px 0;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #10192d;
+}
+
+.editor-answers {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* XẾP HẠNG */
+
+.ranking-row {
+  display: grid;
+  grid-template-columns: 50px 1fr 170px;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  margin: 10px 0;
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.rank-number {
+  color: #ffd76b;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.score-secret {
+  color: var(--cyan);
+  text-align: center;
+}
+
+/* THIẾT BỊ */
+
+.device-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+/* MEDIA */
+
+.media-preview img,
+.media-preview video {
+  display: block;
+  max-width: 100%;
+  max-height: 450px;
+  margin: 15px auto;
+  border-radius: 15px;
+}
+
+.presentation {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: #000;
+  display: grid;
+  place-items: center;
+}
+
+.presentation[hidden] {
+  display: none;
+}
+
+.presentation img,
+.presentation video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.exit-presentation {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  z-index: 2;
+  background: #333;
+}
+
+/* HỘP THOẠI */
+
+.dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: #000b;
+}
+
+.dialog[hidden] {
+  display: none;
+}
+
+.dialog-card {
+  width: min(420px, 100%);
+  padding: 25px;
+  border-radius: 18px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  box-shadow: 0 20px 60px #0008;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+/* WEB PHỤ */
+
+.team-body {
+  padding-bottom: 50px;
+}
+
+.team-header {
+  text-align: center;
+  padding: 25px 12px;
+  background: #111a30;
+  border-bottom: 1px solid var(--border);
+}
+
+.team-header h1 {
+  font-size: 23px;
+  margin-bottom: 5px;
+}
+
+.team-header p {
+  font-size: 11px;
+  color: var(--cyan);
+  letter-spacing: 2px;
+  margin: 0;
+}
+
+.mobile-container {
+  width: min(520px, 94%);
+  margin: 22px auto;
+}
+
+.mobile-card {
+  padding: 22px;
+  margin-bottom: 17px;
+  background: linear-gradient(145deg, #192641, #111a2e);
+  border: 1px solid var(--border);
+  border-radius: 19px;
+  box-shadow: 0 10px 25px #0003;
+}
+
+.mobile-card h2 {
+  text-align: center;
+}
+
+.team-choices {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.team-choice {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  background: #253657;
+  border: 1px solid #42577f;
+}
+
+.team-choice span {
+  color: var(--cyan);
+  font-size: 12px;
+}
+
+.team-choice strong {
+  font-size: 18px;
+}
+
+.team-info {
+  text-align: center;
+}
+
+.team-info > span,
+.points-box span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 2px;
+}
+
+.team-info h2 {
+  color: var(--cyan);
+  font-size: 28px;
+  margin: 10px 0 20px;
+}
+
+.points-box {
+  padding: 18px;
+  background: #0c162c;
+  border: 1px solid #33476c;
+  border-radius: 14px;
+}
+
+.points-box strong {
+  display: block;
+  color: #ffdb73;
+  font-size: 32px;
+  margin-top: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.round-info {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--cyan);
+  font-weight: 800;
+}
+
+.mobile-timer {
+  text-align: center;
+  padding: 22px;
+  margin: 18px 0;
+  border-radius: 15px;
+  background: linear-gradient(135deg, #2d437d, #3a2b64);
+}
+
+.mobile-timer span {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+}
+
+.mobile-timer strong {
+  display: block;
+  font-size: 65px;
+  color: var(--cyan);
+  font-weight: 900;
+}
+
+.bid-input-row input {
+  font-size: 28px;
+  text-align: center;
+  font-weight: 900;
+  padding: 18px;
+}
+
+.mobile-primary {
+  width: 100%;
+  padding: 17px;
+  font-size: 16px;
+  border-radius: 13px;
+}
+
+.bid-status {
+  text-align: center;
+  color: var(--cyan);
+  font-size: 13px;
+  margin: 15px 0 0;
+}
+
+#waitingArea,
+#winnerArea,
+#loserArea,
+#noBidArea {
+  text-align: center;
+  padding: 20px 5px;
+}
+
+#winnerArea h3 {
+  color: var(--green);
+}
+
+#loserArea h3 {
+  color: #ffcf69;
+}
+
+.mobile-question {
+  padding: 20px;
+  margin: 20px 0;
+  border-radius: 14px;
+  background: #0c162c;
+  font-size: 19px;
+  font-weight: 800;
+  line-height: 1.6;
+}
+
+.mobile-answers {
+  display: grid;
+  gap: 12px;
+}
+
+.mobile-answer {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 15px;
+  background: #263654;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.mobile-answer strong {
+  display: grid;
+  place-items: center;
+  min-width: 35px;
+  height: 35px;
+  background: #405a91;
+  border-radius: 9px;
+}
+
+.connection-status {
+  position: fixed;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 14px;
+  border-radius: 30px;
+  background: #703345;
+  font-size: 11px;
+  white-space: nowrap;
+  z-index: 50;
+}
+
+.connection-status.online {
+  background: #14563f;
+}
+
+/* MÀN HÌNH NHỎ */
+
+@media (max-width: 700px) {
+  .topbar {
+    padding: 15px;
+  }
+
+  .topbar h1 {
+    font-size: 17px;
+  }
+
+  .navigation {
+    padding: 10px;
+  }
+
+  .navigation button {
+    font-size: 11px;
+    padding: 9px;
+  }
+
+  .team-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .answer-grid,
+  .editor-answers {
+    grid-template-columns: 1fr;
+  }
+
+  .game-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .question-text {
+    font-size: 19px;
+  }
+
+  .panel {
+    padding: 17px;
+  }
+
+  .ranking-row {
+    grid-template-columns: 35px 1fr 125px;
+    font-size: 12px;
+    padding: 12px;
+  }
+
+  .device-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

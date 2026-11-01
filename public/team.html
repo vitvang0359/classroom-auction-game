@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Đấu giá - Điện thoại các tổ</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="team-body">
+
+  <header class="team-header">
+    <h1 id="mobileTitle">ĐẤU GIÁ KIẾN THỨC</h1>
+    <p>HỆ THỐNG ĐẤU GIÁ TRỰC TUYẾN</p>
+  </header>
+
+  <!-- CHỌN TỔ -->
+  <main id="joinScreen" class="mobile-container">
+    <div class="mobile-card">
+      <h2>CHỌN TỔ CỦA BẠN</h2>
+      <p>Mỗi tổ chỉ được sử dụng một thiết bị.</p>
+      <div id="teamChoices" class="team-choices"></div>
+      <p id="joinError" class="error"></p>
+    </div>
+  </main>
+
+  <!-- GIAO DIỆN ĐẤU GIÁ -->
+  <main id="auctionScreen" class="mobile-container" hidden>
+    <div class="mobile-card team-info">
+      <span>TỔ CỦA BẠN</span>
+      <h2 id="myTeamName">TỔ 1</h2>
+      <div class="points-box">
+        <span>ĐIỂM HIỆN CÓ</span>
+        <strong id="myPoints">1.000</strong>
+      </div>
+    </div>
+
+    <div class="mobile-card">
+      <div class="round-info">
+        <span id="mobileQuestionNumber">CÂU 1</span>
+        <span id="mobilePhase">CHỜ ĐẤU GIÁ</span>
+      </div>
+
+      <div class="mobile-timer">
+        <span>THỜI GIAN CÒN LẠI</span>
+        <strong id="mobileTimer">--</strong>
+      </div>
+
+      <div id="bidArea">
+        <label for="bidInput">NHẬP GIÁ ĐẤU</label>
+        <div class="bid-input-row">
+          <input
+            id="bidInput"
+            type="number"
+            inputmode="numeric"
+            min="10"
+            step="10"
+            placeholder="Ví dụ: 100"
+          >
+        </div>
+
+        <p class="hint">Giá đấu phải là bội số của 10 và không vượt quá điểm hiện có.</p>
+
+        <button id="confirmBidBtn" class="mobile-primary" onclick="askBidConfirm()">
+          CHỐT GIÁ ĐẤU
+        </button>
+
+        <p id="bidStatus" class="bid-status">Chưa nhập giá đấu.</p>
+      </div>
+
+      <div id="waitingArea" hidden>
+        <h3>ĐÃ KHÓA GIÁ ĐẤU</h3>
+        <p>Hệ thống đã nhận giá của tổ bạn.</p>
+        <p>Hãy chờ kết quả đấu giá.</p>
+      </div>
+
+      <div id="winnerArea" hidden>
+        <h3>🎉 TỔ BẠN GIÀNH QUYỀN TRẢ LỜI!</h3>
+        <p>Hãy quan sát màn hình chính để xem câu hỏi.</p>
+      </div>
+
+      <div id="loserArea" hidden>
+        <h3>ĐÃ KẾT THÚC ĐẤU GIÁ</h3>
+        <p>Tổ khác đã giành quyền trả lời.</p>
+      </div>
+
+      <div id="noBidArea" hidden>
+        <h3>CHƯA CÓ LƯỢT ĐẤU GIÁ</h3>
+        <p>Đang chờ lượt tiếp theo.</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- TRANG XEM CÂU HỎI -->
+  <main id="questionScreen" class="mobile-container" hidden>
+    <div class="mobile-card team-info">
+      <span>TỔ CỦA BẠN</span>
+      <h2 id="questionTeamName">TỔ 1</h2>
+      <div class="points-box">
+        <span>ĐIỂM HIỆN CÓ</span>
+        <strong id="questionPoints">1.000</strong>
+      </div>
+    </div>
+
+    <div class="mobile-card">
+      <div class="round-info">
+        <span id="viewQuestionNumber">CÂU 1</span>
+        <span>THEO DÕI CÂU HỎI</span>
+      </div>
+
+      <h2 id="viewTopic">CHỦ ĐỀ</h2>
+      <div id="viewQuestion" class="mobile-question"></div>
+
+      <div id="viewAnswers" class="mobile-answers"></div>
+
+      <p class="hint">Đây là màn hình theo dõi. Chỉ màn hình chính mới có quyền chọn đáp án.</p>
+    </div>
+  </main>
+
+  <!-- KẾT THÚC -->
+  <main id="finishedScreen" class="mobile-container" hidden>
+    <div class="mobile-card">
+      <h2>TRÒ CHƠI ĐÃ KẾT THÚC</h2>
+      <p>Cảm ơn tổ bạn đã tham gia!</p>
+      <div class="points-box">
+        <span>ĐIỂM CUỐI CÙNG CỦA TỔ</span>
+        <strong id="finalPoints">0</strong>
+      </div>
+    </div>
+  </main>
+
+  <!-- XÁC NHẬN GIÁ -->
+  <div id="bidDialog" class="dialog" hidden>
+    <div class="dialog-card">
+      <h2>XÁC NHẬN GIÁ ĐẤU</h2>
+      <p id="bidConfirmText"></p>
+      <div class="dialog-actions">
+        <button onclick="closeBidDialog()">HỦY</button>
+        <button class="mobile-primary" onclick="confirmBid()">XÁC NHẬN</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="connectionStatus" class="connection-status">
+    Đang kết nối...
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="team.js"></script>
+</body>
+</html>
