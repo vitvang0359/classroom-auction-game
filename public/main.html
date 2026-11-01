@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Đấu Giá Kiến Thức</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="loginScreen" class="login-screen">
+    <div class="login-card">
+      <h1>🎯 ĐẤU GIÁ KIẾN THỨC</h1>
+      <p>Đăng nhập quyền quản trị</p>
+      <input id="adminKey" type="password" placeholder="Nhập mã quản trị">
+      <button onclick="login()">ĐĂNG NHẬP</button>
+      <p id="loginError" class="error"></p>
+    </div>
+  </div>
+
+  <div id="app" hidden>
+    <header class="topbar">
+      <div>
+        <h1 id="gameTitle">ĐẤU GIÁ KIẾN THỨC</h1>
+        <small>BẢNG ĐIỀU KHIỂN QUẢN TRỊ</small>
+      </div>
+      <button class="secondary" onclick="showPage('home')">⌂ Trang chủ</button>
+    </header>
+
+    <nav class="navigation">
+      <button onclick="showPage('home')">Trang chủ</button>
+      <button onclick="showPage('game')">Điều khiển trò chơi</button>
+      <button onclick="showPage('settings')">Cài đặt</button>
+      <button onclick="showPage('scores')">Tổng kết điểm</button>
+      <button onclick="showPage('media')">Trình chiếu</button>
+    </nav>
+
+    <!-- TRANG CHỦ -->
+    <section id="page-home" class="page">
+      <div class="hero">
+        <h2 id="homeTitle">ĐẤU GIÁ KIẾN THỨC</h2>
+        <p>Cuộc đua trí tuệ – Chiến thuật – Bứt phá</p>
+        <button class="primary large" onclick="startGame()">BẮT ĐẦU TRÒ CHƠI</button>
+      </div>
+
+      <div class="panel">
+        <div class="section-heading">
+          <h2>Danh sách các tổ</h2>
+          <span>Điểm được ẩn trong quá trình chơi</span>
+        </div>
+        <div id="homeTeams" class="team-grid"></div>
+      </div>
+
+      <div class="panel">
+        <h2>Ảnh đại diện trò chơi</h2>
+        <input type="file" id="homeImage" accept="image/*">
+        <div id="homeImagePreview"></div>
+      </div>
+
+      <div class="panel">
+        <h2>Ngân hàng câu hỏi</h2>
+        <p id="questionCount">Chưa có câu hỏi</p>
+        <button onclick="showPage('settings')">Quản lý câu hỏi và cài đặt</button>
+      </div>
+    </section>
+
+    <!-- TRANG ĐẤU GIÁ -->
+    <section id="page-game" class="page" hidden>
+      <div class="game-heading">
+        <div>
+          <span id="topicLabel" class="topic-label">CHỦ ĐỀ</span>
+          <h2 id="questionNumber">CÂU HỎI 1</h2>
+        </div>
+        <div id="phaseLabel" class="phase-label">SẴN SÀNG</div>
+      </div>
+
+      <div class="timer-panel">
+        <div class="timer-caption">THỜI GIAN ĐẤU GIÁ</div>
+        <div id="timer" class="timer">--</div>
+        <button id="startAuctionBtn" class="primary large" onclick="startAuction()">
+          BẮT ĐẦU ĐẤU GIÁ
+        </button>
+      </div>
+
+      <div class="panel winner-panel">
+        <span class="muted">TỔ GIÀNH QUYỀN TRẢ LỜI</span>
+        <h1 id="winnerName">Chưa xác định</h1>
+      </div>
+
+      <div class="panel question-panel">
+        <h2>NỘI DUNG CÂU HỎI</h2>
+        <div id="questionText" class="question-text">
+          Câu hỏi sẽ được hiển thị sau khi tổ thắng được xác định.
+        </div>
+
+        <div id="answerList" class="answer-grid" hidden>
+          <button class="answer" data-answer="A" onclick="chooseAnswer('A')">
+            <b>A</b><span id="answerA">...</span>
+          </button>
+          <button class="answer" data-answer="B" onclick="chooseAnswer('B')">
+            <b>B</b><span id="answerB">...</span>
+          </button>
+          <button class="answer" data-answer="C" onclick="chooseAnswer('C')">
+            <b>C</b><span id="answerC">...</span>
+          </button>
+          <button class="answer" data-answer="D" onclick="chooseAnswer('D')">
+            <b>D</b><span id="answerD">...</span>
+          </button>
+        </div>
+
+        <div id="answerResult" class="result-message"></div>
+      </div>
+
+      <div class="control-row">
+        <button id="revealBtn" class="primary" onclick="revealQuestion()" disabled>
+          HIỆN CÂU HỎI & ĐÁP ÁN
+        </button>
+        <button id="nextBtn" onclick="nextQuestion()" disabled>
+          CÂU TIẾP THEO →
+        </button>
+      </div>
+
+      <p class="privacy-note">
+        Điểm số và mức đấu giá được giữ kín trên màn hình quản trị trong quá trình chơi.
+      </p>
+    </section>
+
+    <!-- CÀI ĐẶT -->
+    <section id="page-settings" class="page" hidden>
+      <div class="panel">
+        <h2>Cài đặt trò chơi</h2>
+
+        <label>Tên trò chơi</label>
+        <input id="settingTitle" type="text">
+
+        <label>Chủ đề</label>
+        <input id="settingTopic" type="text">
+
+        <label>Thời gian đấu giá (giây)</label>
+        <input id="settingDuration" type="number" min="5" max="300">
+
+        <label>Điểm khởi đầu mỗi tổ</label>
+        <input id="settingPoints" type="number" min="0">
+
+        <h3>Tên các tổ</h3>
+        <div id="teamSettings"></div>
+
+        <button class="primary" onclick="saveSettings()">LƯU CÀI ĐẶT</button>
+      </div>
+
+      <div class="panel">
+        <div class="section-heading">
+          <h2>Ngân hàng câu hỏi</h2>
+          <button class="primary" onclick="addQuestion()">+ THÊM CÂU HỎI</button>
+        </div>
+        <div id="questionEditor"></div>
+        <button class="primary" onclick="saveQuestions()">LƯU TOÀN BỘ CÂU HỎI</button>
+      </div>
+
+      <div class="panel">
+        <h2>Quản lý thiết bị tham gia</h2>
+        <p>Cho phép giải phóng thiết bị của một tổ nếu điện thoại bị mất kết nối hoặc cần đổi máy.</p>
+        <div id="deviceManagement"></div>
+      </div>
+    </section>
+
+    <!-- TỔNG KẾT -->
+    <section id="page-scores" class="page" hidden>
+      <div class="panel">
+        <h2>🏆 BẢNG XẾP HẠNG CUỐI TRÒ CHƠI</h2>
+        <p>Nhấn vào từng ô điểm để tiết lộ điểm của tổ đó.</p>
+        <div id="rankingList"></div>
+        <button class="danger" onclick="endGame()">KẾT THÚC TRÒ CHƠI</button>
+      </div>
+    </section>
+
+    <!-- TRÌNH CHIẾU -->
+    <section id="page-media" class="page" hidden>
+      <div class="panel">
+        <h2>Trình chiếu hình ảnh / video</h2>
+        <input id="mediaFile" type="file" accept="image/*,video/*">
+        <button class="primary" onclick="uploadMedia()">TẢI LÊN</button>
+        <div id="mediaPreview" class="media-preview"></div>
+        <button class="large" onclick="openPresentation()">MỞ TOÀN MÀN HÌNH</button>
+      </div>
+    </section>
+
+    <div id="presentation" class="presentation" hidden>
+      <button class="exit-presentation" onclick="closePresentation()">✕ Thoát trình chiếu</button>
+      <div id="presentationContent"></div>
+    </div>
+  </div>
+
+  <div id="confirmDialog" class="dialog" hidden>
+    <div class="dialog-card">
+      <h2>Xác nhận</h2>
+      <p id="confirmText">Bạn có chắc chắn muốn tiếp tục?</p>
+      <div class="dialog-actions">
+        <button onclick="closeConfirm()">HỦY</button>
+        <button class="primary" id="confirmYes">ĐỒNG Ý</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>
