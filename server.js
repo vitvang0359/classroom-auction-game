@@ -128,7 +128,7 @@ function teamSnapshot(teamIndex) {
 }
 
 function broadcast() {
-  io.emit("admin-state", adminSnapshot());
+  io.to("admins").emit("admin-state", adminSnapshot());
 
   for (let i = 0; i < 4; i++) {
     io.to(`team-${i}`).emit("team-state", teamSnapshot(i));
