@@ -6,6 +6,83 @@ let mediaUrl = "";
 let mediaType = "";
 let revealedScores = new Set();
 
+// ÂM THANH TỰ ĐỘNG CHO WEB CHỦ
+let soundContext = null;
+let soundUnlocked = false;
+let previousSoundPhase = null;
+let previousSoundResult = "";
+let countdownSoundEnd = null;
+let countdownSoundLast = null;
+
+function unlockSound() {
+  try {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return;
+    if (!soundContext) soundContext = new AudioContextClass();
+    if (soundContext.state === "suspended") soundContext.resume();
+    soundUnlocked = true;
+  } catch (error) {
+    console.warn("Không thể bật âm thanh:", error);
+  }
+}
+
+function playTone(frequency, duration = 0.13, type = "sine", volume = 0.045, delay = 0) {
+  if (!soundUnlocked || !soundContext) return;
+  const startAt = soundContext.currentTime + delay;
+  const oscillator = soundContext.createOscillator();
+  const gain = soundContext.createGain();
+  oscillator.type = type;
+  oscillator.frequency.setValueAtTime(frequency, startAt);
+  gain.gain.setValueAtTime(0.0001, startAt);
+  gain.gain.exponentialRampToValueAtTime(volume, startAt + 0.015);
+  gain.gain.exponentialRampToValueAtTime(0.0001, startAt + duration);
+  oscillator.connect(gain);
+  gain.connect(soundContext.destination);
+  oscillator.start(startAt);
+  oscillator.stop(startAt + duration + 0.02);
+}
+
+function playSequence(notes, type = "sine", volume = 0.05) {
+  notes.forEach((note, index) => playTone(note, 0.16, type, volume, index * 0.14));
+}
+
+function playGameSound(kind) {
+  if (!soundUnlocked) return;
+  if (kind === "auctionStart") playSequence([520, 680, 880], "triangle", 0.045);
+  else if (kind === "winner") playSequence([660, 830, 990, 1320], "sine", 0.055);
+  else if (kind === "reveal") playSequence([440, 660, 880], "triangle", 0.04);
+  else if (kind === "correct") playSequence([660, 830, 990, 1320], "sine", 0.055);
+  else if (kind === "wrong") playSequence([330, 247, 185], "sawtooth", 0.035);
+  else if (kind === "timeUp") playSequence([440, 330, 220], "square", 0.035);
+  else if (kind === "finished") {
+    [523, 659, 784, 1047, 784, 1047, 1319].forEach((note, index) =>
+      playTone(note, 0.22, "triangle", 0.055, index * 0.18)
+    );
+  }
+}
+
+function handleSoundState(state) {
+  if (previousSoundPhase === null) {
+    previousSoundPhase = state.phase;
+    previousSoundResult = state.result
+      ? `${state.currentIndex}:${state.result.selected}:${state.result.isCorrect}`
+      : "";
+    return;
+  }
+  if (state.phase !== previousSoundPhase) {
+    if (state.phase === "auction") playGameSound("auctionStart");
+    else if (state.phase === "winner") playGameSound("winner");
+    else if (state.phase === "question") playGameSound("reveal");
+    else if (state.phase === "answered" && state.result)
+      playGameSound(state.result.isCorrect ? "correct" : "wrong");
+    else if (state.phase === "finished") playGameSound("finished");
+    previousSoundPhase = state.phase;
+  }
+  previousSoundResult = state.result
+    ? `${state.currentIndex}:${state.result.selected}:${state.result.isCorrect}`
+    : "";
+}
+
 const $ = id => document.getElementById(id);
 
 async function api(url, method = "GET", body = null) {
@@ -35,7 +112,7 @@ function notify(message) {
   alert(message);
 }
 
-async function login() {
+async function login() {\n  unlockSound();
   adminKey = $("adminKey").value.trim();
 
   if (!adminKey) {
@@ -81,7 +158,7 @@ function showPage(name) {
   if (name === "settings") renderSettings();
 }
 
-function render(state) {
+function render(state) {\n  handleSoundState(state);
   currentState = state;
 
   $("gameTitle").textContent = state.settings.title;
@@ -196,12 +273,26 @@ function renderGame() {
 function startCountdown(endTime) {
   stopCountdown();
 
+  if (countdownSoundEnd !== endTime) {
+    countdownSoundEnd = endTime;
+    countdownSoundLast = null;
+  }
+
   function update() {
     const remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
     $("timer").textContent = remaining;
 
+    if (remaining <= 5 && remaining > 0 && remaining !== countdownSoundLast) {
+      countdownSoundLast = remaining;
+      playTone(remaining <= 3 ? 920 : 720, 0.085, "square", 0.035);
+    }
+
     if (remaining <= 0) {
       $("timer").textContent = "0";
+      if (countdownSoundLast !== 0) {
+        countdownSoundLast = 0;
+        playGameSound("timeUp");
+      }
       stopCountdown();
     }
   }
