@@ -112,7 +112,8 @@ function notify(message) {
   alert(message);
 }
 
-async function login() {\n  unlockSound();
+async function login() {
+  unlockSound();
   adminKey = $("adminKey").value.trim();
 
   if (!adminKey) {
@@ -158,7 +159,8 @@ function showPage(name) {
   if (name === "settings") renderSettings();
 }
 
-function render(state) {\n  handleSoundState(state);
+function render(state) {
+  handleSoundState(state);
   currentState = state;
 
   $("gameTitle").textContent = state.settings.title;
