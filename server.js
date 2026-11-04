@@ -23,8 +23,6 @@ if (!ADMIN_KEY) {
 }
 
 const DATA_FILE = path.join(__dirname, "data.json");
-const uploadDir = path.join(__dirname, "public", "uploads");
-fs.mkdirSync(uploadDir, { recursive: true });
 
 const defaultData = {
   settings: {
@@ -688,34 +686,58 @@ app.post("/api/admin/release-team", requireAdmin, (req, res) => {
   res.json({ success: true });
 });
 
-// Tải ảnh/video lên
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadDir),
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    cb(null, crypto.randomUUID() + ext);
-  }
-});
-
+// Tải ảnh/video trực tiếp lên Supabase Storage để không mất khi Render khởi động lại
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 100 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    const allowed = /image\/|video\//.test(file.mimetype);
+    const allowed = /image\\/|video\\//.test(file.mimetype);
     cb(allowed ? null : new Error("Chỉ chấp nhận ảnh hoặc video."), allowed);
   }
 });
 
-app.post("/api/admin/upload", requireAdmin, upload.single("media"), (req, res) => {
+app.post("/api/admin/upload", requireAdmin, upload.single("media"), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: "Chưa chọn tệp." });
   }
 
-  res.json({
-    success: true,
-    url: "/uploads/" + req.file.filename,
-    type: req.file.mimetype.startsWith("video/") ? "video" : "image"
-  });
+  if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) {
+    return res.status(500).json({ error: "Máy chủ chưa cấu hình Supabase Storage." });
+  }
+
+  const ext = path.extname(req.file.originalname).toLowerCase().replace(/[^.a-z0-9]/g, "");
+  const filename = crypto.randomUUID() + ext;
+  const objectPath = "uploads/" + filename;
+  const uploadUrl = SUPABASE_URL + "/storage/v1/object/game-media/" + objectPath
+    .split("/").map(encodeURIComponent).join("/");
+
+  try {
+    const storageResponse = await fetch(uploadUrl, {
+      method: "POST",
+      headers: {
+        apikey: SUPABASE_SECRET_KEY,
+        Authorization: "Bearer " + SUPABASE_SECRET_KEY,
+        "Content-Type": req.file.mimetype,
+        "x-upsert": "true"
+      },
+      body: req.file.buffer
+    });
+
+    if (!storageResponse.ok) {
+      const detail = await storageResponse.text();
+      console.error("Supabase Storage upload failed:", storageResponse.status, detail);
+      return res.status(502).json({ error: "Không tải được tệp lên Supabase Storage. Hãy kiểm tra bucket game-media." });
+    }
+
+    res.json({
+      success: true,
+      url: SUPABASE_URL + "/storage/v1/object/public/game-media/" + objectPath,
+      type: req.file.mimetype.startsWith("video/") ? "video" : "image"
+    });
+  } catch (error) {
+    console.error("Supabase Storage upload error:", error);
+    res.status(502).json({ error: "Lỗi kết nối Supabase Storage." });
+  }
 });
 
 app.get("/", (req, res) => {
