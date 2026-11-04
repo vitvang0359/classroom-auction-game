@@ -162,6 +162,7 @@ function showPage(name) {
 function render(state) {
   handleSoundState(state);
   currentState = state;
+  renderHomeImage();
 
   $("gameTitle").textContent = state.settings.title;
   $("homeTitle").textContent = state.settings.title;
@@ -619,14 +620,51 @@ function closePresentation() {
   $("presentationContent").innerHTML = "";
 }
 
-// ẢNH TRANG CHỦ
+// ẢNH TRANG CHỦ: tự tải lên Supabase và lưu đường dẫn vào game_state.
+function renderHomeImage() {
+  const url = currentState?.homeImageUrl;
+  if (!url) {
+    $("homeImagePreview").innerHTML = "";
+    return;
+  }
+
+  $("homeImagePreview").innerHTML =
+    `<img src="${escapeHTML(url)}" alt="Ảnh đại diện">`;
+}
+
+async function uploadHomeImage(file) {
+  if (!file.type.startsWith("image/")) {
+    notify("Vui lòng chọn tệp hình ảnh.");
+    return;
+  }
+
+  $("homeImagePreview").textContent = "Đang tải ảnh lên Supabase...";
+
+  const form = new FormData();
+  form.append("media", file);
+  form.append("purpose", "home");
+
+  try {
+    const response = await fetch("/api/admin/upload", {
+      method: "POST",
+      headers: { "x-admin-key": adminKey },
+      body: form
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "Không thể tải ảnh lên.");
+
+    $("homeImagePreview").innerHTML =
+      `<img src="${escapeHTML(data.url)}" alt="Ảnh đại diện">`;
+    notify("Đã tải ảnh lên và lưu thành công!");
+  } catch (error) {
+    renderHomeImage();
+    notify(error.message || "Không thể tải ảnh lên Supabase.");
+  }
+}
+
 $("homeImage").addEventListener("change", event => {
   const file = event.target.files[0];
-  if (!file) return;
-
-  const url = URL.createObjectURL(file);
-  $("homeImagePreview").innerHTML =
-    `<img src="${url}" alt="Ảnh đại diện">`;
+  if (file) uploadHomeImage(file);
 });
 
 // HỘP XÁC NHẬN DÙNG CHUNG
