@@ -48,7 +48,7 @@ const defaultData = {
   ended: false
 };
 
-function loadData() {
+function loadLocalData() {
   try {
     if (fs.existsSync(DATA_FILE)) {
       const saved = JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
@@ -60,11 +60,70 @@ function loadData() {
   return structuredClone(defaultData);
 }
 
-let state = loadData();
+const SUPABASE_URL = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
+const SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY || "";
+let state = loadLocalData();
 let auctionTimer = null;
+let saveQueue = Promise.resolve();
+
+async function loadPersistentData() {
+  if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) {
+    console.warn("Chua cau hinh Supabase; tam thoi dung data.json.");
+    return;
+  }
+
+  const response = await fetch(
+    SUPABASE_URL + "/rest/v1/game_state?select=state&id=eq.1",
+    {
+      headers: {
+        apikey: SUPABASE_SECRET_KEY,
+        Authorization: "Bearer " + SUPABASE_SECRET_KEY
+      }
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Supabase doc du lieu that bai: " + response.status + " " + await response.text());
+  }
+
+  const rows = await response.json();
+  if (rows.length && rows[0].state) {
+    state = { ...structuredClone(defaultData), ...rows[0].state };
+    console.log("Da tai du lieu game tu Supabase.");
+  } else {
+    await save();
+    await saveQueue;
+    console.log("Da tao du lieu game ban dau tren Supabase.");
+  }
+}
 
 function save() {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(state, null, 2));
+  const snapshot = structuredClone(state);
+  try {
+    fs.writeFileSync(DATA_FILE, JSON.stringify(snapshot, null, 2));
+  } catch (e) {
+    console.warn("Khong the ghi data.json tam thoi:", e.message);
+  }
+
+  if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) return;
+
+  saveQueue = saveQueue.then(async () => {
+    const response = await fetch(SUPABASE_URL + "/rest/v1/game_state?on_conflict=id", {
+      method: "POST",
+      headers: {
+        apikey: SUPABASE_SECRET_KEY,
+        Authorization: "Bearer " + SUPABASE_SECRET_KEY,
+        "Content-Type": "application/json",
+        Prefer: "resolution=merge-duplicates,return=minimal"
+      },
+      body: JSON.stringify({ id: 1, state: snapshot, updated_at: new Date().toISOString() })
+    });
+    if (!response.ok) {
+      throw new Error("Supabase luu du lieu that bai: " + response.status + " " + await response.text());
+    }
+  }).catch(error => {
+    console.error(error.message);
+  });
 }
 
 function publicQuestion() {
@@ -659,19 +718,32 @@ app.post("/api/admin/upload", requireAdmin, upload.single("media"), (req, res) =
   });
 });
 
-// Khôi phục bộ đếm thời gian nếu máy chủ khởi động lại giữa lượt
-if (state.phase === "auction" && state.auctionEndsAt) {
-  if (state.auctionEndsAt <= Date.now()) {
-    finishAuction();
-  } else {
-    startAuctionTimer();
-  }
-}
-
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "main.html"));
 });
 
-server.listen(PORT, () => {
-  console.log(`Game dang chay tai cong ${PORT}`);
-});
+async function startServer() {
+  try {
+    await loadPersistentData();
+  } catch (error) {
+    console.error("Khong the ket noi Supabase:", error.message);
+    console.error("May chu dung lai de tranh ghi de du lieu online.");
+    process.exit(1);
+    return;
+  }
+
+  // Khôi phục bộ đếm thời gian nếu máy chủ khởi động lại giữa lượt
+  if (state.phase === "auction" && state.auctionEndsAt) {
+    if (state.auctionEndsAt <= Date.now()) {
+      finishAuction();
+    } else {
+      startAuctionTimer();
+    }
+  }
+
+  server.listen(PORT, () => {
+    console.log(`Game dang chay tai cong ${PORT}`);
+  });
+}
+
+startServer();
