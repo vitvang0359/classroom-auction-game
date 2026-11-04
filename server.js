@@ -691,7 +691,7 @@ const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 100 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    const allowed = /image\\/|video\\//.test(file.mimetype);
+    const allowed = /image\/|video\//.test(file.mimetype);
     cb(allowed ? null : new Error("Chỉ chấp nhận ảnh hoặc video."), allowed);
   }
 });
