@@ -33,6 +33,7 @@ const defaultData = {
     teams: ["Tổ 1", "Tổ 2", "Tổ 3", "Tổ 4"]
   },
   questions: [],
+  homeImageUrl: null,
   scores: [1000, 1000, 1000, 1000],
   claims: [null, null, null, null],
   currentIndex: 0,
@@ -151,6 +152,7 @@ function adminSnapshot() {
   return {
     settings: state.settings,
     questions: state.questions,
+    homeImageUrl: state.homeImageUrl || null,
     scores: state.scores,
     currentIndex: state.currentIndex,
     phase: state.phase,
@@ -729,9 +731,21 @@ app.post("/api/admin/upload", requireAdmin, upload.single("media"), async (req, 
       return res.status(502).json({ error: "Không tải được tệp lên Supabase Storage. Hãy kiểm tra bucket game-media." });
     }
 
+    const publicUrl = SUPABASE_URL + "/storage/v1/object/public/game-media/" + objectPath;
+
+    // Ảnh đại diện trang chủ được lưu đường dẫn vào game_state trên Supabase.
+    if (req.body && req.body.purpose === "home") {
+      if (!req.file.mimetype.startsWith("image/")) {
+        return res.status(400).json({ error: "Ảnh đại diện chỉ chấp nhận tệp hình ảnh." });
+      }
+      state.homeImageUrl = publicUrl;
+      save();
+      broadcast();
+    }
+
     res.json({
       success: true,
-      url: SUPABASE_URL + "/storage/v1/object/public/game-media/" + objectPath,
+      url: publicUrl,
       type: req.file.mimetype.startsWith("video/") ? "video" : "image"
     });
   } catch (error) {
