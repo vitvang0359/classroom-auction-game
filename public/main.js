@@ -212,7 +212,8 @@ function renderGame() {
   $("phaseLabel").textContent = labels[s.phase] || s.phase;
 
   $("winnerName").textContent =
-    s.winner ? s.winner.teamName : "Chưa xác định";
+    s.activeResponder ? s.activeResponder.teamName + " ĐANG TRẢ LỜI" :
+    (s.winner ? s.winner.teamName : "Chưa xác định");
 
   const isOpenQuestion = q?.type === "open";
   if (s.revealed && q) {
@@ -235,6 +236,13 @@ function renderGame() {
     button.disabled = s.phase !== "question";
   });
   $("answerResult").textContent = "";
+  if (s.lastAttempt && s.phase === "question" && s.activeResponder) {
+    const previousTeam = s.settings.teams[s.lastAttempt.teamIndex] || "Đội trước";
+    const reason = s.lastAttempt.timedOut ? "hết thời gian" : "trả lời sai";
+    $("answerResult").textContent = previousTeam + " " + reason +
+      ". Lượt trả lời chuyển sang " + s.activeResponder.teamName + ".";
+    $("answerResult").className = "result-message failure";
+  }
 
   if (s.result) {
     if (s.result.type === "open") {
@@ -265,8 +273,13 @@ function renderGame() {
   $("nextBtn").disabled = s.phase !== "answered";
 
   if (s.phase === "auction") {
+    $("timerCaption").textContent = "THỜI GIAN ĐẤU GIÁ";
     startCountdown(s.auctionEndsAt);
+  } else if (s.phase === "question" && s.answerEndsAt) {
+    $("timerCaption").textContent = "THỜI GIAN TRẢ LỜI";
+    startCountdown(s.answerEndsAt);
   } else {
+    $("timerCaption").textContent = "THỜI GIAN";
     stopCountdown();
     $("timer").textContent = "--";
   }
@@ -378,6 +391,8 @@ function renderSettings() {
 
   $("settingTitle").value = s.settings.title;
   $("settingDuration").value = s.settings.auctionSeconds;
+  $("settingAnswerMultiple").value = s.settings.answerMultipleSeconds || 15;
+  $("settingAnswerOpen").value = s.settings.answerOpenSeconds || 30;
   $("settingPoints").value = s.settings.startingPoints;
 
   $("teamSettings").innerHTML = s.settings.teams.map((name, i) => `
@@ -397,6 +412,8 @@ async function saveSettings() {
     await api("/api/admin/settings", "POST", {
       title: $("settingTitle").value.trim(),
       auctionSeconds: Number($("settingDuration").value),
+      answerMultipleSeconds: Number($("settingAnswerMultiple").value),
+      answerOpenSeconds: Number($("settingAnswerOpen").value),
       startingPoints: Number($("settingPoints").value),
       teams
     });
