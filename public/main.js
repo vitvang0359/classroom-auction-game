@@ -214,49 +214,47 @@ function renderGame() {
   $("winnerName").textContent =
     s.winner ? s.winner.teamName : "Chưa xác định";
 
+  const isOpenQuestion = q?.type === "open";
   if (s.revealed && q) {
     $("questionText").textContent = q.question;
-    $("answerList").hidden = false;
-
-    ["A", "B", "C", "D"].forEach(letter => {
-      $("answer" + letter).textContent = q.answers[["A", "B", "C", "D"].indexOf(letter)];
-    });
+    $("answerList").hidden = isOpenQuestion;
+    $("openAnswerControls").hidden = !isOpenQuestion || s.phase !== "question";
+    if (!isOpenQuestion) {
+      ["A", "B", "C", "D"].forEach(letter => {
+        $("answer" + letter).textContent = (q.answers || [])[["A", "B", "C", "D"].indexOf(letter)] || "";
+      });
+    }
   } else {
-    $("questionText").textContent =
-      "Câu hỏi sẽ được hiển thị sau khi tổ thắng được xác định.";
+    $("questionText").textContent = "Câu hỏi sẽ được hiển thị sau khi tổ thắng được xác định.";
     $("answerList").hidden = true;
+    $("openAnswerControls").hidden = true;
   }
 
   document.querySelectorAll(".answer").forEach(button => {
     button.classList.remove("correct", "wrong");
     button.disabled = s.phase !== "question";
   });
-
   $("answerResult").textContent = "";
 
   if (s.result) {
-    const correct = s.result.correctAnswer;
-    const selected = s.result.selected;
-
-    const correctButton = document.querySelector(
-      `.answer[data-answer="${correct}"]`
-    );
-
-    if (correctButton) correctButton.classList.add("correct");
-
-    if (!s.result.isCorrect) {
-      const wrongButton = document.querySelector(
-        `.answer[data-answer="${selected}"]`
-      );
-      if (wrongButton) wrongButton.classList.add("wrong");
+    if (s.result.type === "open") {
+      $("answerResult").textContent = s.result.isCorrect
+        ? "CHÍNH XÁC! TỔ ĐÃ TRẢ LỜI ĐÚNG."
+        : "CHƯA CHÍNH XÁC! TỔ TRẢ LỜI SAI.";
+    } else {
+      const correct = s.result.correctAnswer;
+      const selected = s.result.selected;
+      const correctButton = document.querySelector(`.answer[data-answer="${correct}"]`);
+      if (correctButton) correctButton.classList.add("correct");
+      if (!s.result.isCorrect) {
+        const wrongButton = document.querySelector(`.answer[data-answer="${selected}"]`);
+        if (wrongButton) wrongButton.classList.add("wrong");
+      }
+      $("answerResult").textContent = s.result.isCorrect
+        ? "CHÍNH XÁC! TỔ ĐÃ TRẢ LỜI ĐÚNG."
+        : `CHƯA CHÍNH XÁC! ĐÁP ÁN ĐÚNG LÀ ${correct}.`;
     }
-
-    $("answerResult").textContent = s.result.isCorrect
-      ? "CHÍNH XÁC! TỔ ĐÃ TRẢ LỜI ĐÚNG."
-      : `CHƯA CHÍNH XÁC! ĐÁP ÁN ĐÚNG LÀ ${correct}.`;
-
-    $("answerResult").className =
-      "result-message " + (s.result.isCorrect ? "success" : "failure");
+    $("answerResult").className = "result-message " + (s.result.isCorrect ? "success" : "failure");
   }
 
   $("startAuctionBtn").disabled =
@@ -341,11 +339,18 @@ async function revealQuestion() {
 
 async function chooseAnswer(letter) {
   if (!confirm(`Xác nhận đáp án ${letter}?`)) return;
-
   try {
-    await api("/api/admin/answer", "POST", {
-      answer: letter
-    });
+    await api("/api/admin/answer", "POST", { answer: letter });
+  } catch (error) {
+    notify(error.message);
+  }
+}
+
+async function markOpenAnswer(isCorrect) {
+  const label = isCorrect ? "ĐÚNG" : "SAI";
+  if (!confirm(`Xác nhận chấm câu tự luận là ${label}?`)) return;
+  try {
+    await api("/api/admin/answer", "POST", { isCorrect });
   } catch (error) {
     notify(error.message);
   }
@@ -402,99 +407,97 @@ async function saveSettings() {
 }
 
 // NGÂN HÀNG CÂU HỎI
-function renderQuestionEditor() {
-  const questions = currentState.questions;
-
-  $("questionEditor").innerHTML = questions.map((q, i) => `
-    <div class="question-editor" data-index="${i}">
-      <div class="section-heading">
-        <h3>Câu ${i + 1}</h3>
-        <button class="danger small"
-          onclick="deleteQuestion(${i})">XÓA</button>
-      </div>
-
-      <label>Chủ đề của câu hỏi</label>
-      <input class="q-topic" value="${escapeHTML(q.topic || currentState.settings.topic || "")}"
-        placeholder="Ví dụ: Lịch sử Việt Nam">
-
-      <label>Nội dung câu hỏi</label>
-      <textarea class="q-text">${escapeHTML(q.question)}</textarea>
-
-      <div class="editor-answers">
-        ${["A", "B", "C", "D"].map((letter, j) => `
-          <div>
-            <label>Đáp án ${letter}</label>
-            <input class="q-answer"
-              data-letter="${letter}"
-              value="${escapeHTML(q.answers[j] || "")}">
-          </div>
-        `).join("")}
-      </div>
-
-      <label>Đáp án đúng</label>
-      <select class="q-correct">
-        ${["A", "B", "C", "D"].map(letter => `
-          <option value="${letter}" ${q.correct === letter ? "selected" : ""}>
-            ${letter}
-          </option>
-        `).join("")}
-      </select>
-    </div>
-  `).join("");
-}
-
-function addQuestion() {
-  const editors = [...document.querySelectorAll(".question-editor")];
-
-  const questions = editors.map(editor => ({
+function readQuestionEditors() {
+  return [...document.querySelectorAll(".question-editor")].map(editor => ({
+    type: editor.querySelector(".q-type").value,
     topic: editor.querySelector(".q-topic").value,
     question: editor.querySelector(".q-text").value,
     answers: [...editor.querySelectorAll(".q-answer")].map(input => input.value),
     correct: editor.querySelector(".q-correct").value
   }));
+}
 
-  questions.push({
-    topic: "",
-    question: "",
-    answers: ["", "", "", ""],
-    correct: "A"
-  });
+function renderQuestionEditor() {
+  const questions = currentState.questions || [];
+  $("questionEditor").innerHTML = questions.map((q, i) => {
+    const type = q.type === "open" ? "open" : "multiple";
+    return `
+    <div class="question-editor" data-index="${i}">
+      <div class="section-heading">
+        <h3>Câu ${i + 1} – ${type === "open" ? "TỰ LUẬN" : "TRẮC NGHIỆM"}</h3>
+        <div>
+          <button class="small" onclick="moveQuestion(${i}, -1)" ${i === 0 ? "disabled" : ""}>↑</button>
+          <button class="small" onclick="moveQuestion(${i}, 1)" ${i === questions.length - 1 ? "disabled" : ""}>↓</button>
+          <button class="danger small" onclick="deleteQuestion(${i})">XÓA</button>
+        </div>
+      </div>
+      <label>Loại câu hỏi</label>
+      <select class="q-type" onchange="changeQuestionType(${i}, this.value)">
+        <option value="multiple" ${type === "multiple" ? "selected" : ""}>Trắc nghiệm</option>
+        <option value="open" ${type === "open" ? "selected" : ""}>Tự luận</option>
+      </select>
+      <label>Chủ đề của câu hỏi</label>
+      <input class="q-topic" value="${escapeHTML(q.topic || currentState.settings.topic || "")}" placeholder="Ví dụ: Lịch sử Việt Nam">
+      <label>Nội dung câu hỏi</label>
+      <textarea class="q-text">${escapeHTML(q.question || "")}</textarea>
+      <div class="mc-fields" ${type === "open" ? "hidden" : ""}>
+        <div class="editor-answers">
+          ${["A", "B", "C", "D"].map((letter, j) => `
+            <div><label>Đáp án ${letter}</label>
+              <input class="q-answer" data-letter="${letter}" value="${escapeHTML((q.answers || [])[j] || "")}">
+            </div>`).join("")}
+        </div>
+        <label>Đáp án đúng</label>
+        <select class="q-correct">
+          ${["A", "B", "C", "D"].map(letter => `
+            <option value="${letter}" ${q.correct === letter ? "selected" : ""}>${letter}</option>
+          `).join("")}
+        </select>
+      </div>
+    </div>`;
+  }).join("");
+}
 
+function changeQuestionType(index, type) {
+  const questions = readQuestionEditors();
+  questions[index].type = type;
   currentState.questions = questions;
   renderQuestionEditor();
+}
 
+function addQuestion() {
+  const questions = readQuestionEditors();
+  questions.push({ type: "multiple", topic: "", question: "", answers: ["", "", "", ""], correct: "A" });
+  currentState.questions = questions;
+  renderQuestionEditor();
   const last = document.querySelector(".question-editor:last-child");
   if (last) last.scrollIntoView({ behavior: "smooth" });
 }
 
 function deleteQuestion(index) {
   if (!confirm(`Xóa câu hỏi số ${index + 1}?`)) return;
-
-  const editors = [...document.querySelectorAll(".question-editor")];
-
-  const questions = editors.map(editor => ({
-    topic: editor.querySelector(".q-topic").value,
-    question: editor.querySelector(".q-text").value,
-    answers: [...editor.querySelectorAll(".q-answer")].map(input => input.value),
-    correct: editor.querySelector(".q-correct").value
-  }));
-
+  const questions = readQuestionEditors();
   questions.splice(index, 1);
   currentState.questions = questions;
   renderQuestionEditor();
 }
 
+function moveQuestion(index, direction) {
+  const questions = readQuestionEditors();
+  const target = index + direction;
+  if (target < 0 || target >= questions.length) return;
+  [questions[index], questions[target]] = [questions[target], questions[index]];
+  currentState.questions = questions;
+  renderQuestionEditor();
+}
+
 async function saveQuestions() {
-  const editors = [...document.querySelectorAll(".question-editor")];
-
-  const questions = editors.map(editor => ({
-    topic: editor.querySelector(".q-topic").value.trim(),
-    question: editor.querySelector(".q-text").value.trim(),
-    answers: [...editor.querySelectorAll(".q-answer")]
-      .map(input => input.value.trim()),
-    correct: editor.querySelector(".q-correct").value
+  const questions = readQuestionEditors().map(q => ({
+    ...q,
+    topic: q.topic.trim(),
+    question: q.question.trim(),
+    answers: q.type === "open" ? [] : q.answers.map(answer => answer.trim())
   }));
-
   try {
     await api("/api/admin/questions", "POST", { questions });
     notify("Đã lưu ngân hàng câu hỏi!");
