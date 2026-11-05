@@ -201,15 +201,14 @@ function phaseText(phase) {
 }
 
 function renderQuestion(q) {
-  if (!q || !q.question || !q.answers) return;
-
-  $("viewQuestionNumber").textContent =
-    `CÂU ${q.number} / ${q.total}`;
-
+  if (!q || !q.question) return;
+  $("viewQuestionNumber").textContent = `CÂU ${q.number} / ${q.total}`;
   $("viewTopic").textContent = q.topic || "Chưa có chủ đề";
   $("viewQuestion").textContent = q.question;
-
-  $("viewAnswers").innerHTML = q.answers.map((answer, i) => `
+  const isOpen = q.type === "open";
+  $("viewQuestionType").textContent = isOpen ? "CÂU TỰ LUẬN" : "CÂU TRẮC NGHIỆM";
+  $("viewAnswers").hidden = isOpen;
+  $("viewAnswers").innerHTML = isOpen ? "" : (q.answers || []).map((answer, i) => `
     <div class="mobile-answer">
       <strong>${["A", "B", "C", "D"][i]}</strong>
       <span>${escapeHTML(answer)}</span>
