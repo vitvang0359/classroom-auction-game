@@ -248,7 +248,8 @@ function renderGame() {
     if (s.result.type === "open") {
       const openAnswer = q?.openAnswer || "Chưa nhập đáp án mẫu cho câu hỏi này.";
       $("answerResult").textContent =
-        (s.result.isCorrect ? "CHÍNH XÁC! TỔ ĐÃ TRẢ LỜI ĐÚNG.\n" : "CHƯA CHÍNH XÁC! TỔ TRẢ LỜI SAI.\n") +
+        (s.result.isCorrect ? "CHÍNH XÁC! TỔ ĐÃ TRẢ LỜI ĐÚNG.\n" :
+          (s.result.timedOut ? "HẾT THỜI GIAN! TỔ KHÔNG TRẢ LỜI KỊP.\n" : "CHƯA CHÍNH XÁC! TỔ TRẢ LỜI SAI.\n")) +
         "ĐÁP ÁN THAM KHẢO: " + openAnswer;
     } else {
       const correct = s.result.correctAnswer;
@@ -261,7 +262,8 @@ function renderGame() {
       }
       $("answerResult").textContent = s.result.isCorrect
         ? "CHÍNH XÁC! TỔ ĐÃ TRẢ LỜI ĐÚNG."
-        : `CHƯA CHÍNH XÁC! ĐÁP ÁN ĐÚNG LÀ ${correct}.`;
+        : (s.result.timedOut ? "HẾT THỜI GIAN! ĐÁP ÁN ĐÚNG LÀ " + correct + "." :
+          `CHƯA CHÍNH XÁC! ĐÁP ÁN ĐÚNG LÀ ${correct}.`);
     }
     $("answerResult").className = "result-message " + (s.result.isCorrect ? "success" : "failure");
   }
