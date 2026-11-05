@@ -214,6 +214,18 @@ function renderQuestion(q) {
       <span>${escapeHTML(answer)}</span>
     </div>
   `).join("");
+
+  let answerBox = document.getElementById("viewOpenAnswer");
+  if (!answerBox) {
+    answerBox = document.createElement("div");
+    answerBox.id = "viewOpenAnswer";
+    answerBox.className = "mobile-answer";
+    $("viewAnswers").insertAdjacentElement("afterend", answerBox);
+  }
+  answerBox.hidden = !isOpen || !q.openAnswer;
+  answerBox.textContent = isOpen && q.openAnswer
+    ? "ĐÁP ÁN THAM KHẢO: " + q.openAnswer
+    : "";
 }
 
 function startTimer(endTime) {
