@@ -133,7 +133,7 @@ function publicQuestion() {
     return {
       number: state.currentIndex + 1,
       total: state.questions.length,
-      topic: state.settings.topic,
+      topic: q.topic || state.settings.topic || "Chưa có chủ đề",
       question: null,
       answers: null
     };
@@ -142,7 +142,7 @@ function publicQuestion() {
   return {
     number: state.currentIndex + 1,
     total: state.questions.length,
-    topic: state.settings.topic,
+    topic: q.topic || state.settings.topic || "Chưa có chủ đề",
     question: q.question,
     answers: q.answers
   };
@@ -474,6 +474,7 @@ app.post("/api/admin/questions", requireAdmin, (req, res) => {
   }
 
   const questions = req.body.questions.map(q => ({
+    topic: String(q.topic || state.settings.topic || "Chưa có chủ đề"),
     question: String(q.question || ""),
     answers: Array.isArray(q.answers)
       ? q.answers.slice(0, 4).map(a => String(a))
@@ -482,6 +483,7 @@ app.post("/api/admin/questions", requireAdmin, (req, res) => {
   }));
 
   const valid = questions.every(q =>
+    q.topic.trim() &&
     q.question.trim() &&
     q.answers.length === 4 &&
     q.answers.every(a => a.trim()) &&
@@ -490,7 +492,7 @@ app.post("/api/admin/questions", requireAdmin, (req, res) => {
 
   if (!valid) {
     return res.status(400).json({
-      error: "Mỗi câu cần nội dung, đủ 4 đáp án và đáp án đúng A/B/C/D."
+      error: "Mỗi câu cần chủ đề, nội dung, đủ 4 đáp án và đáp án đúng A/B/C/D."
     });
   }
 
