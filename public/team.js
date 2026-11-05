@@ -136,9 +136,19 @@ function render(state) {
   }
 
   if (state.phase === "question" || state.phase === "answered") {
-    stopTimer();
     showScreen("questionScreen");
     renderQuestion(q);
+    if (state.phase === "question" && state.answerEndsAt) {
+      $("questionMobileTimer").parentElement.hidden = false;
+      startTimer(state.answerEndsAt, "questionMobileTimer");
+    } else {
+      stopTimer();
+      $("questionMobileTimer").textContent = "--";
+      $("questionMobileTimer").parentElement.hidden = true;
+    }
+    $("answerTurnStatus").textContent = state.activeResponder
+      ? "ĐẾN LƯỢT TRẢ LỜI: " + state.activeResponder.teamName
+      : (state.phase === "answered" ? "CÂU HỎI ĐÃ KẾT THÚC." : "Đang chờ đội trả lời.");
     return;
   }
 
@@ -178,7 +188,7 @@ function render(state) {
   }
 
   if (isAuction) {
-    startTimer(state.auctionEndsAt);
+    startTimer(state.auctionEndsAt, "mobileTimer");
   } else {
     stopTimer();
     $("mobileTimer").textContent = "--";
@@ -228,7 +238,7 @@ function renderQuestion(q) {
     : "";
 }
 
-function startTimer(endTime) {
+function startTimer(endTime, elementId = "mobileTimer") {
   stopTimer();
 
   function update() {
@@ -237,11 +247,11 @@ function startTimer(endTime) {
       Math.ceil((endTime - Date.now()) / 1000)
     );
 
-    $("mobileTimer").textContent = seconds;
+    $(elementId).textContent = seconds;
 
     if (seconds <= 0) {
       stopTimer();
-      $("mobileTimer").textContent = "0";
+      $(elementId).textContent = "0";
     }
   }
 
