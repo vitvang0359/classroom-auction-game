@@ -147,6 +147,7 @@ function render(state) {
   $("mobileQuestionNumber").textContent =
     `CÂU ${q?.number || 1} / ${q?.total || 1}`;
 
+  $("mobileTopic").textContent = q?.topic || "Chưa có chủ đề";
   $("mobilePhase").textContent = phaseText(state.phase);
 
   const bid = state.myBid;
@@ -205,7 +206,7 @@ function renderQuestion(q) {
   $("viewQuestionNumber").textContent =
     `CÂU ${q.number} / ${q.total}`;
 
-  $("viewTopic").textContent = q.topic;
+  $("viewTopic").textContent = q.topic || "Chưa có chủ đề";
   $("viewQuestion").textContent = q.question;
 
   $("viewAnswers").innerHTML = q.answers.map((answer, i) => `
