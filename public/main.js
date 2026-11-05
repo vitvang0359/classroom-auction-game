@@ -194,7 +194,7 @@ function renderGame() {
 
   const q = s.question;
 
-  $("topicLabel").textContent = q?.topic || s.settings.topic;
+  $("topicLabel").textContent = q?.topic || "CHƯA CÓ CHỦ ĐỀ";
   $("questionNumber").textContent =
     `CÂU HỎI ${s.currentIndex + 1} / ${s.questions.length}`;
 
@@ -371,7 +371,6 @@ function renderSettings() {
   if (!s) return;
 
   $("settingTitle").value = s.settings.title;
-  $("settingTopic").value = s.settings.topic;
   $("settingDuration").value = s.settings.auctionSeconds;
   $("settingPoints").value = s.settings.startingPoints;
 
@@ -391,7 +390,6 @@ async function saveSettings() {
   try {
     await api("/api/admin/settings", "POST", {
       title: $("settingTitle").value.trim(),
-      topic: $("settingTopic").value.trim(),
       auctionSeconds: Number($("settingDuration").value),
       startingPoints: Number($("settingPoints").value),
       teams
@@ -414,6 +412,10 @@ function renderQuestionEditor() {
         <button class="danger small"
           onclick="deleteQuestion(${i})">XÓA</button>
       </div>
+
+      <label>Chủ đề của câu hỏi</label>
+      <input class="q-topic" value="${escapeHTML(q.topic || currentState.settings.topic || "")}"
+        placeholder="Ví dụ: Lịch sử Việt Nam">
 
       <label>Nội dung câu hỏi</label>
       <textarea class="q-text">${escapeHTML(q.question)}</textarea>
@@ -445,12 +447,14 @@ function addQuestion() {
   const editors = [...document.querySelectorAll(".question-editor")];
 
   const questions = editors.map(editor => ({
+    topic: editor.querySelector(".q-topic").value,
     question: editor.querySelector(".q-text").value,
     answers: [...editor.querySelectorAll(".q-answer")].map(input => input.value),
     correct: editor.querySelector(".q-correct").value
   }));
 
   questions.push({
+    topic: "",
     question: "",
     answers: ["", "", "", ""],
     correct: "A"
@@ -469,6 +473,7 @@ function deleteQuestion(index) {
   const editors = [...document.querySelectorAll(".question-editor")];
 
   const questions = editors.map(editor => ({
+    topic: editor.querySelector(".q-topic").value,
     question: editor.querySelector(".q-text").value,
     answers: [...editor.querySelectorAll(".q-answer")].map(input => input.value),
     correct: editor.querySelector(".q-correct").value
@@ -483,6 +488,7 @@ async function saveQuestions() {
   const editors = [...document.querySelectorAll(".question-editor")];
 
   const questions = editors.map(editor => ({
+    topic: editor.querySelector(".q-topic").value.trim(),
     question: editor.querySelector(".q-text").value.trim(),
     answers: [...editor.querySelectorAll(".q-answer")]
       .map(input => input.value.trim()),
