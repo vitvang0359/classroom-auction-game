@@ -616,6 +616,30 @@ h1, h2, h3, p {
   font-weight: 800;
 }
 
+.mobile-topic {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  margin: 16px 0;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: rgba(40, 61, 105, 0.45);
+  text-align: center;
+}
+
+.mobile-topic span {
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: var(--muted);
+}
+
+.mobile-topic strong {
+  font-size: 22px;
+  color: var(--cyan);
+  overflow-wrap: anywhere;
+}
+
 .mobile-timer {
   text-align: center;
   padding: 22px;
