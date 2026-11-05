@@ -74,7 +74,7 @@
       </div>
 
       <div class="timer-panel">
-        <div class="timer-caption">THỜI GIAN ĐẤU GIÁ</div>
+        <div id="timerCaption" class="timer-caption">THỜI GIAN ĐẤU GIÁ</div>
         <div id="timer" class="timer">--</div>
         <button id="startAuctionBtn" class="primary large" onclick="startAuction()">
           BẮT ĐẦU ĐẤU GIÁ
@@ -138,6 +138,12 @@
 
         <label>Thời gian đấu giá (giây)</label>
         <input id="settingDuration" type="number" min="5" max="300">
+
+        <label>Thời gian trả lời trắc nghiệm (giây)</label>
+        <input id="settingAnswerMultiple" type="number" min="5" max="300" value="15">
+
+        <label>Thời gian trả lời tự luận (giây)</label>
+        <input id="settingAnswerOpen" type="number" min="5" max="300" value="30">
 
         <label>Điểm khởi đầu mỗi tổ</label>
         <input id="settingPoints" type="number" min="0">
