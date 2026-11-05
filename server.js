@@ -129,22 +129,18 @@ function publicQuestion() {
   const q = state.questions[state.currentIndex];
   if (!q) return null;
 
+  const type = q.type === "open" ? "open" : "multiple";
   if (!state.revealed) {
     return {
-      number: state.currentIndex + 1,
-      total: state.questions.length,
+      number: state.currentIndex + 1, total: state.questions.length, type,
       topic: q.topic || state.settings.topic || "Chưa có chủ đề",
-      question: null,
-      answers: null
+      question: null, answers: null
     };
   }
-
   return {
-    number: state.currentIndex + 1,
-    total: state.questions.length,
+    number: state.currentIndex + 1, total: state.questions.length, type,
     topic: q.topic || state.settings.topic || "Chưa có chủ đề",
-    question: q.question,
-    answers: q.answers
+    question: q.question, answers: type === "open" ? null : q.answers
   };
 }
 
@@ -473,26 +469,23 @@ app.post("/api/admin/questions", requireAdmin, (req, res) => {
     return res.status(400).json({ error: "Danh sách câu hỏi không hợp lệ." });
   }
 
-  const questions = req.body.questions.map(q => ({
-    topic: String(q.topic || state.settings.topic || "Chưa có chủ đề"),
-    question: String(q.question || ""),
-    answers: Array.isArray(q.answers)
-      ? q.answers.slice(0, 4).map(a => String(a))
-      : [],
-    correct: String(q.correct || "").toUpperCase()
-  }));
-
+  const questions = req.body.questions.map(q => {
+    const type = q.type === "open" ? "open" : "multiple";
+    return {
+      type,
+      topic: String(q.topic || state.settings.topic || "Chưa có chủ đề"),
+      question: String(q.question || ""),
+      answers: type === "open" ? [] : (Array.isArray(q.answers) ? q.answers.slice(0, 4).map(a => String(a)) : []),
+      correct: type === "open" ? "" : String(q.correct || "").toUpperCase()
+    };
+  });
   const valid = questions.every(q =>
-    q.topic.trim() &&
-    q.question.trim() &&
-    q.answers.length === 4 &&
-    q.answers.every(a => a.trim()) &&
-    ["A", "B", "C", "D"].includes(q.correct)
+    q.topic.trim() && q.question.trim() &&
+    (q.type === "open" || (q.answers.length === 4 && q.answers.every(a => a.trim()) && ["A", "B", "C", "D"].includes(q.correct)))
   );
-
   if (!valid) {
     return res.status(400).json({
-      error: "Mỗi câu cần chủ đề, nội dung, đủ 4 đáp án và đáp án đúng A/B/C/D."
+      error: "Mỗi câu cần chủ đề và nội dung. Câu trắc nghiệm phải có đủ 4 đáp án và đáp án đúng."
     });
   }
 
@@ -592,32 +585,33 @@ app.post("/api/admin/answer", requireAdmin, (req, res) => {
   if (state.phase !== "question" || !state.winner) {
     return res.status(400).json({ error: "Chưa đến bước trả lời." });
   }
-
-  const selected = String(req.body.answer || "").toUpperCase();
-
-  if (!["A", "B", "C", "D"].includes(selected)) {
-    return res.status(400).json({ error: "Đáp án không hợp lệ." });
-  }
-
   const q = state.questions[state.currentIndex];
   const teamIndex = state.winner.teamIndex;
   const bid = state.bids[teamIndex];
-
   const amount = bid ? bid.amount : 0;
-  const correct = selected === q.correct;
+  const isOpen = q.type === "open";
+  let correct;
+
+  if (isOpen) {
+    if (typeof req.body.isCorrect !== "boolean") {
+      return res.status(400).json({ error: "Hãy chọn ĐÚNG hoặc SAI để chấm câu tự luận." });
+    }
+    correct = req.body.isCorrect;
+  } else {
+    const selected = String(req.body.answer || "").toUpperCase();
+    if (!["A", "B", "C", "D"].includes(selected)) {
+      return res.status(400).json({ error: "Đáp án không hợp lệ." });
+    }
+    correct = selected === q.correct;
+  }
 
   state.scores[teamIndex] += correct ? amount : -amount;
-  state.result = {
-    selected,
-    correctAnswer: q.correct,
-    isCorrect: correct,
-    teamIndex
-  };
-
+  state.result = isOpen
+    ? { type: "open", selected: null, correctAnswer: null, isCorrect: correct, teamIndex }
+    : { type: "multiple", selected: String(req.body.answer).toUpperCase(), correctAnswer: q.correct, isCorrect: correct, teamIndex };
   state.phase = "answered";
   save();
   broadcast();
-
   res.json({ success: true, result: state.result });
 });
 
