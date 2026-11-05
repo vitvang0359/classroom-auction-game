@@ -140,7 +140,11 @@ function publicQuestion() {
   return {
     number: state.currentIndex + 1, total: state.questions.length, type,
     topic: q.topic || state.settings.topic || "Chưa có chủ đề",
-    question: q.question, answers: type === "open" ? null : q.answers
+    question: q.question,
+    answers: type === "open" ? null : q.answers,
+    openAnswer: type === "open" && state.phase === "answered" && state.result?.type === "open"
+      ? (q.openAnswer || "Chưa nhập đáp án mẫu cho câu hỏi này.")
+      : null
   };
 }
 
@@ -475,6 +479,7 @@ app.post("/api/admin/questions", requireAdmin, (req, res) => {
       type,
       topic: String(q.topic || state.settings.topic || "Chưa có chủ đề"),
       question: String(q.question || ""),
+      openAnswer: type === "open" ? String(q.openAnswer || "") : "",
       answers: type === "open" ? [] : (Array.isArray(q.answers) ? q.answers.slice(0, 4).map(a => String(a)) : []),
       correct: type === "open" ? "" : String(q.correct || "").toUpperCase()
     };
