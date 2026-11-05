@@ -29,6 +29,8 @@ const defaultData = {
     title: "ĐẤU GIÁ KIẾN THỨC",
     topic: "Chủ đề",
     auctionSeconds: 20,
+    answerMultipleSeconds: 15,
+    answerOpenSeconds: 30,
     startingPoints: 1000,
     teams: ["Tổ 1", "Tổ 2", "Tổ 3", "Tổ 4"]
   },
@@ -40,8 +42,12 @@ const defaultData = {
   phase: "home",
   round: 0,
   auctionEndsAt: null,
+  answerEndsAt: null,
   bids: {},
   winner: null,
+  secondBidder: null,
+  activeResponder: null,
+  lastAttempt: null,
   revealed: false,
   result: null,
   ended: false
@@ -63,6 +69,7 @@ const SUPABASE_URL = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
 const SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY || "";
 let state = loadLocalData();
 let auctionTimer = null;
+let answerTimer = null;
 let saveQueue = Promise.resolve();
 
 async function loadPersistentData() {
@@ -158,7 +165,11 @@ function adminSnapshot() {
     phase: state.phase,
     round: state.round,
     auctionEndsAt: state.auctionEndsAt,
+    answerEndsAt: state.answerEndsAt,
     winner: state.winner,
+    secondBidder: state.secondBidder,
+    activeResponder: state.activeResponder,
+    lastAttempt: state.lastAttempt,
     revealed: state.revealed,
     result: state.result,
     ended: state.ended,
@@ -178,8 +189,12 @@ function teamSnapshot(teamIndex) {
     phase: state.phase,
     round: state.round,
     auctionEndsAt: state.auctionEndsAt,
+    answerEndsAt: state.answerEndsAt,
     question: publicQuestion(),
     winner: state.winner,
+    secondBidder: state.secondBidder,
+    activeResponder: state.activeResponder,
+    lastAttempt: state.lastAttempt,
     result: state.result,
     ended: state.ended,
     myBid: state.bids[teamIndex] || null
@@ -221,6 +236,69 @@ function getTeam(req, res, next) {
 function stopAuctionTimer() {
   if (auctionTimer) clearTimeout(auctionTimer);
   auctionTimer = null;
+}
+
+function stopAnswerTimer() {
+  if (answerTimer) clearTimeout(answerTimer);
+  answerTimer = null;
+}
+
+function answerDurationMs() {
+  const q = state.questions[state.currentIndex];
+  const seconds = q?.type === "open"
+    ? state.settings.answerOpenSeconds
+    : state.settings.answerMultipleSeconds;
+  return Math.max(1, Number(seconds) || (q?.type === "open" ? 30 : 15)) * 1000;
+}
+
+function startAnswerTimer() {
+  stopAnswerTimer();
+  if (state.phase !== "question" || !state.answerEndsAt) return;
+  const remaining = Math.max(0, state.answerEndsAt - Date.now());
+  answerTimer = setTimeout(handleAnswerTimeout, remaining);
+}
+
+function finishAnswerAttempt(teamIndex, timedOut, correct = false, selected = null) {
+  const bid = state.bids[teamIndex];
+  const amount = bid ? bid.amount : 0;
+  state.scores[teamIndex] += correct ? amount * 2 : -amount;
+  state.lastAttempt = { teamIndex, timedOut, isCorrect: correct };
+  stopAnswerTimer();
+
+  if (!correct && state.activeResponder?.teamIndex === state.winner?.teamIndex &&
+      state.secondBidder && state.secondBidder.teamIndex !== teamIndex) {
+    state.activeResponder = { ...state.secondBidder };
+    state.answerEndsAt = Date.now() + answerDurationMs();
+    state.result = null;
+    save();
+    broadcast();
+    startAnswerTimer();
+    return { nextResponder: state.activeResponder };
+  }
+
+  state.result = {
+    type: state.questions[state.currentIndex]?.type === "open" ? "open" : "multiple",
+    selected,
+    correctAnswer: state.questions[state.currentIndex]?.correct || null,
+    isCorrect: correct,
+    timedOut,
+    teamIndex
+  };
+  state.phase = "answered";
+  state.answerEndsAt = null;
+  state.activeResponder = null;
+  save();
+  broadcast();
+  return { finished: true };
+}
+
+function handleAnswerTimeout() {
+  if (state.phase !== "question" || !state.activeResponder) return;
+  if (state.answerEndsAt && Date.now() < state.answerEndsAt) {
+    startAnswerTimer();
+    return;
+  }
+  finishAnswerAttempt(state.activeResponder.teamIndex, true, false);
 }
 
 function startAuctionTimer() {
@@ -283,6 +361,13 @@ function finishAuction() {
     teamIndex: eligible[0].index,
     teamName: state.settings.teams[eligible[0].index]
   };
+  state.secondBidder = eligible[1] ? {
+    teamIndex: eligible[1].index,
+    teamName: state.settings.teams[eligible[1].index]
+  } : null;
+  state.activeResponder = null;
+  state.answerEndsAt = null;
+  state.lastAttempt = null;
 
   state.phase = "winner";
   save();
@@ -444,9 +529,22 @@ app.post("/api/admin/settings", requireAdmin, (req, res) => {
   if (body.auctionSeconds !== undefined) {
     const n = Number(body.auctionSeconds);
     if (!Number.isInteger(n) || n < 5 || n > 300) {
-      return res.status(400).json({ error: "Thời gian phải từ 5 đến 300 giây." });
+      return res.status(400).json({ error: "Thời gian đấu giá phải từ 5 đến 300 giây." });
     }
     state.settings.auctionSeconds = n;
+  }
+
+  for (const [field, label] of [
+    ["answerMultipleSeconds", "trắc nghiệm"],
+    ["answerOpenSeconds", "tự luận"]
+  ]) {
+    if (body[field] !== undefined) {
+      const n = Number(body[field]);
+      if (!Number.isInteger(n) || n < 5 || n > 300) {
+        return res.status(400).json({ error: "Thời gian trả lời " + label + " phải từ 5 đến 300 giây." });
+      }
+      state.settings[field] = n;
+    }
   }
 
   if (body.startingPoints !== undefined) {
@@ -520,9 +618,14 @@ app.post("/api/admin/start", requireAdmin, (req, res) => {
   state.phase = "ready";
   state.bids = {};
   state.winner = null;
+  state.secondBidder = null;
+  state.activeResponder = null;
+  state.answerEndsAt = null;
+  state.lastAttempt = null;
   state.revealed = false;
   state.result = null;
   state.ended = false;
+  stopAnswerTimer();
 
   save();
   broadcast();
@@ -549,6 +652,11 @@ app.post("/api/admin/auction/start", requireAdmin, (req, res) => {
   state.round += 1;
   state.bids = {};
   state.winner = null;
+  state.secondBidder = null;
+  state.activeResponder = null;
+  state.answerEndsAt = null;
+  state.lastAttempt = null;
+  stopAnswerTimer();
   state.revealed = false;
   state.result = null;
   state.phase = "auction";
@@ -579,23 +687,31 @@ app.post("/api/admin/reveal", requireAdmin, (req, res) => {
 
   state.revealed = true;
   state.phase = "question";
+  state.activeResponder = { ...state.winner };
+  state.answerEndsAt = Date.now() + answerDurationMs();
+  state.lastAttempt = null;
   save();
   broadcast();
+  startAnswerTimer();
 
   res.json({ success: true });
 });
 
 // Chọn đáp án và tính điểm
 app.post("/api/admin/answer", requireAdmin, (req, res) => {
-  if (state.phase !== "question" || !state.winner) {
-    return res.status(400).json({ error: "Chưa đến bước trả lời." });
+  if (state.phase !== "question" || !state.activeResponder) {
+    return res.status(400).json({ error: "Hiện không có đội nào đang trả lời." });
   }
+  if (state.answerEndsAt && Date.now() >= state.answerEndsAt) {
+    handleAnswerTimeout();
+    return res.status(400).json({ error: "Đã hết thời gian trả lời." });
+  }
+
   const q = state.questions[state.currentIndex];
-  const teamIndex = state.winner.teamIndex;
-  const bid = state.bids[teamIndex];
-  const amount = bid ? bid.amount : 0;
+  const teamIndex = state.activeResponder.teamIndex;
   const isOpen = q.type === "open";
   let correct;
+  let selected = null;
 
   if (isOpen) {
     if (typeof req.body.isCorrect !== "boolean") {
@@ -603,21 +719,15 @@ app.post("/api/admin/answer", requireAdmin, (req, res) => {
     }
     correct = req.body.isCorrect;
   } else {
-    const selected = String(req.body.answer || "").toUpperCase();
+    selected = String(req.body.answer || "").toUpperCase();
     if (!["A", "B", "C", "D"].includes(selected)) {
       return res.status(400).json({ error: "Đáp án không hợp lệ." });
     }
     correct = selected === q.correct;
   }
 
-  state.scores[teamIndex] += correct ? amount : -amount;
-  state.result = isOpen
-    ? { type: "open", selected: null, correctAnswer: null, isCorrect: correct, teamIndex }
-    : { type: "multiple", selected: String(req.body.answer).toUpperCase(), correctAnswer: q.correct, isCorrect: correct, teamIndex };
-  state.phase = "answered";
-  save();
-  broadcast();
-  res.json({ success: true, result: state.result });
+  const outcome = finishAnswerAttempt(teamIndex, false, correct, selected);
+  res.json({ success: true, result: state.result, nextResponder: outcome.nextResponder || null });
 });
 
 // Sang câu tiếp theo
@@ -634,10 +744,15 @@ app.post("/api/admin/next", requireAdmin, (req, res) => {
     return res.json({ success: true, finished: true });
   }
 
+  stopAnswerTimer();
   state.currentIndex += 1;
   state.phase = "ready";
   state.bids = {};
   state.winner = null;
+  state.secondBidder = null;
+  state.activeResponder = null;
+  state.answerEndsAt = null;
+  state.lastAttempt = null;
   state.revealed = false;
   state.result = null;
   state.auctionEndsAt = null;
@@ -651,6 +766,8 @@ app.post("/api/admin/next", requireAdmin, (req, res) => {
 // Kết thúc trò chơi
 app.post("/api/admin/end", requireAdmin, (req, res) => {
   stopAuctionTimer();
+  stopAnswerTimer();
+  state.answerEndsAt = null;
   state.phase = "finished";
   state.ended = true;
   state.auctionEndsAt = null;
@@ -770,6 +887,14 @@ async function startServer() {
   }
 
   // Khôi phục bộ đếm thời gian nếu máy chủ khởi động lại giữa lượt
+  if (state.phase === "question" && state.answerEndsAt) {
+    if (state.answerEndsAt <= Date.now()) {
+      handleAnswerTimeout();
+    } else {
+      startAnswerTimer();
+    }
+  }
+
   if (state.phase === "auction" && state.auctionEndsAt) {
     if (state.auctionEndsAt <= Date.now()) {
       finishAuction();
