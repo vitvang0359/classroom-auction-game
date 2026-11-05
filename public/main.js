@@ -238,9 +238,10 @@ function renderGame() {
 
   if (s.result) {
     if (s.result.type === "open") {
-      $("answerResult").textContent = s.result.isCorrect
-        ? "CHÍNH XÁC! TỔ ĐÃ TRẢ LỜI ĐÚNG."
-        : "CHƯA CHÍNH XÁC! TỔ TRẢ LỜI SAI.";
+      const openAnswer = q?.openAnswer || "Chưa nhập đáp án mẫu cho câu hỏi này.";
+      $("answerResult").textContent =
+        (s.result.isCorrect ? "CHÍNH XÁC! TỔ ĐÃ TRẢ LỜI ĐÚNG.\n" : "CHƯA CHÍNH XÁC! TỔ TRẢ LỜI SAI.\n") +
+        "ĐÁP ÁN THAM KHẢO: " + openAnswer;
     } else {
       const correct = s.result.correctAnswer;
       const selected = s.result.selected;
@@ -412,6 +413,7 @@ function readQuestionEditors() {
     type: editor.querySelector(".q-type").value,
     topic: editor.querySelector(".q-topic").value,
     question: editor.querySelector(".q-text").value,
+    openAnswer: editor.querySelector(".q-open-answer")?.value || "",
     answers: [...editor.querySelectorAll(".q-answer")].map(input => input.value),
     correct: editor.querySelector(".q-correct").value
   }));
@@ -440,6 +442,10 @@ function renderQuestionEditor() {
       <input class="q-topic" value="${escapeHTML(q.topic || currentState.settings.topic || "")}" placeholder="Ví dụ: Lịch sử Việt Nam">
       <label>Nội dung câu hỏi</label>
       <textarea class="q-text">${escapeHTML(q.question || "")}</textarea>
+      <div class="open-fields" ${type === "open" ? "" : "hidden"}>
+        <label>Đáp án / Gợi ý trả lời (sẽ hiện sau khi chấm)</label>
+        <textarea class="q-open-answer" placeholder="Nhập đáp án mẫu hoặc ý chính cần có">${escapeHTML(q.openAnswer || "")}</textarea>
+      </div>
       <div class="mc-fields" ${type === "open" ? "hidden" : ""}>
         <div class="editor-answers">
           ${["A", "B", "C", "D"].map((letter, j) => `
@@ -467,7 +473,7 @@ function changeQuestionType(index, type) {
 
 function addQuestion() {
   const questions = readQuestionEditors();
-  questions.push({ type: "multiple", topic: "", question: "", answers: ["", "", "", ""], correct: "A" });
+  questions.push({ type: "multiple", topic: "", question: "", openAnswer: "", answers: ["", "", "", ""], correct: "A" });
   currentState.questions = questions;
   renderQuestionEditor();
   const last = document.querySelector(".question-editor:last-child");
@@ -496,6 +502,7 @@ async function saveQuestions() {
     ...q,
     topic: q.topic.trim(),
     question: q.question.trim(),
+    openAnswer: q.openAnswer.trim(),
     answers: q.type === "open" ? [] : q.answers.map(answer => answer.trim())
   }));
   try {
