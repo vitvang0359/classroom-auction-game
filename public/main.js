@@ -274,6 +274,9 @@ function renderGame() {
 
   $("revealBtn").disabled = s.phase !== "winner";
   $("nextBtn").disabled = s.phase !== "answered";
+  const waitingSecondTeam = s.phase === "question" && s.activeResponder && !s.answerEndsAt && s.lastAttempt;
+  $("startSecondAnswerBtn").hidden = !waitingSecondTeam;
+  $("startSecondAnswerBtn").disabled = !waitingSecondTeam;
 
   if (s.phase === "auction") {
     $("timerCaption").textContent = "THỜI GIAN ĐẤU GIÁ";
@@ -281,6 +284,10 @@ function renderGame() {
   } else if (s.phase === "question" && s.answerEndsAt) {
     $("timerCaption").textContent = "THỜI GIAN TRẢ LỜI";
     startCountdown(s.answerEndsAt);
+  } else if (waitingSecondTeam) {
+    $("timerCaption").textContent = "CHỜ QUẢN TRÒ BẮT ĐẦU TÍNH GIỜ";
+    stopCountdown();
+    $("timer").textContent = String(q?.type === "open" ? (s.settings.answerOpenSeconds || 30) : (s.settings.answerMultipleSeconds || 15));
   } else {
     $("timerCaption").textContent = "THỜI GIAN";
     stopCountdown();
@@ -349,6 +356,14 @@ async function startAuction() {
 async function revealQuestion() {
   try {
     await api("/api/admin/reveal", "POST", {});
+  } catch (error) {
+    notify(error.message);
+  }
+}
+
+async function startSecondAnswer() {
+  try {
+    await api("/api/admin/answer/start", "POST", {});
   } catch (error) {
     notify(error.message);
   }
