@@ -268,11 +268,11 @@ function finishAnswerAttempt(teamIndex, timedOut, correct = false, selected = nu
   if (!correct && state.activeResponder?.teamIndex === state.winner?.teamIndex &&
       state.secondBidder && state.secondBidder.teamIndex !== teamIndex) {
     state.activeResponder = { ...state.secondBidder };
-    state.answerEndsAt = Date.now() + answerDurationMs();
+    // Chuyển lượt nhưng chờ quản trò chủ động bấm bắt đầu tính giờ.
+    state.answerEndsAt = null;
     state.result = null;
     save();
     broadcast();
-    startAnswerTimer();
     return { nextResponder: state.activeResponder };
   }
 
@@ -697,12 +697,28 @@ app.post("/api/admin/reveal", requireAdmin, (req, res) => {
   res.json({ success: true });
 });
 
+// Quản trò chủ động bắt đầu tính giờ cho tổ thứ hai
+app.post("/api/admin/answer/start", requireAdmin, (req, res) => {
+  if (state.phase !== "question" || !state.activeResponder || state.answerEndsAt) {
+    return res.status(400).json({ error: "Hiện không có lượt trả lời nào đang chờ bắt đầu." });
+  }
+
+  state.answerEndsAt = Date.now() + answerDurationMs();
+  save();
+  broadcast();
+  startAnswerTimer();
+  res.json({ success: true });
+});
+
 // Chọn đáp án và tính điểm
 app.post("/api/admin/answer", requireAdmin, (req, res) => {
   if (state.phase !== "question" || !state.activeResponder) {
     return res.status(400).json({ error: "Hiện không có đội nào đang trả lời." });
   }
-  if (state.answerEndsAt && Date.now() >= state.answerEndsAt) {
+  if (!state.answerEndsAt) {
+    return res.status(400).json({ error: "Quản trò chưa bắt đầu tính giờ cho tổ này." });
+  }
+  if (Date.now() >= state.answerEndsAt) {
     handleAnswerTimeout();
     return res.status(400).json({ error: "Đã hết thời gian trả lời." });
   }
