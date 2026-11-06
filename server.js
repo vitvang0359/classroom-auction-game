@@ -840,7 +840,7 @@ app.post("/api/admin/score", requireAdmin, (req, res) => {
 app.post("/api/admin/release-team", requireAdmin, (req, res) => {
   const i = Number(req.body.teamIndex);
 
-  if (!Number.isInteger(i) || i < 0 || i > 3) {
+  if (!Number.isInteger(i) || i < 0 || i >= state.settings.teams.length) {
     return res.status(400).json({ error: "Tổ không hợp lệ." });
   }
 
