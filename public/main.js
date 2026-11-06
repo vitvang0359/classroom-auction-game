@@ -277,6 +277,10 @@ function renderGame() {
   const waitingSecondTeam = s.phase === "question" && s.activeResponder && !s.answerEndsAt && s.lastAttempt;
   $("startSecondAnswerBtn").hidden = !waitingSecondTeam;
   $("startSecondAnswerBtn").disabled = !waitingSecondTeam;
+  if (waitingSecondTeam) {
+    $("startSecondAnswerBtn").textContent =
+      "BẮT ĐẦU TÍNH GIỜ CHO " + s.activeResponder.teamName.toUpperCase();
+  }
 
   if (s.phase === "auction") {
     $("timerCaption").textContent = "THỜI GIAN ĐẤU GIÁ";
