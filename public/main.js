@@ -338,7 +338,7 @@ function stopCountdown() {
 }
 
 async function startGame() {
-  if (!confirm("Bắt đầu trò chơi và đặt lại điểm của cả 4 tổ?")) return;
+  if (!confirm("Bắt đầu trò chơi và đặt lại điểm của cả 4 người chơi?")) return;
 
   try {
     await api("/api/admin/start", "POST", {});
@@ -426,7 +426,7 @@ function renderSettings() {
 }
 
 async function saveSettings() {
-  const teams = [0, 1, 2, 3].map(i =>
+  const teams = [0, 1, 2, 3, 4].map(i =>
     $("teamName" + i).value.trim()
   );
 
