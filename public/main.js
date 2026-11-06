@@ -194,7 +194,8 @@ function renderGame() {
 
   const q = s.question;
 
-  $("topicLabel").textContent = q?.topic || "CHƯA CÓ CHỦ ĐỀ";
+  // Chủ đề được công khai ngay từ đầu vòng; chỉ nội dung câu hỏi và đáp án chờ đến lúc được mở.
+  $("topicLabel").textContent = q?.topic ? `CHỦ ĐỀ: ${q.topic}` : "CHƯA CÓ CHỦ ĐỀ";
   $("questionNumber").textContent =
     `CÂU HỎI ${s.currentIndex + 1} / ${s.questions.length}`;
 
