@@ -48,7 +48,7 @@ async function loadTeams() {
 
     $("teamChoices").innerHTML = data.teams.map((name, i) => `
       <button class="team-choice" onclick="joinTeam(${i})">
-        <span>TỔ ${i + 1}</span>
+        <span>${i === 4 ? "THẦY" : `TỔ ${i + 1}`}</span>
         <strong>${escapeHTML(name)}</strong>
       </button>
     `).join("");
@@ -121,7 +121,9 @@ function render(state) {
   $("mobileTitle").textContent = state.settings.title;
 
   $("myTeamName").textContent = state.teamName;
+  $("myTeamName").previousElementSibling.textContent = state.teamIndex === 4 ? "NGƯỜI CHƠI" : "TỔ CỦA BẠN";
   $("questionTeamName").textContent = state.teamName;
+  $("questionTeamName").previousElementSibling.textContent = state.teamIndex === 4 ? "NGƯỜI CHƠI" : "TỔ CỦA BẠN";
 
   $("myPoints").textContent = formatPoints(state.points);
   $("questionPoints").textContent = formatPoints(state.points);
