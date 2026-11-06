@@ -258,16 +258,26 @@ function startAnswerTimer() {
   answerTimer = setTimeout(handleAnswerTimeout, remaining);
 }
 
+function chargeBid(teamIndex) {
+  const bid = state.bids[teamIndex];
+  if (!bid || bid.charged) return;
+  state.scores[teamIndex] = Math.max(0, state.scores[teamIndex] - bid.amount);
+  bid.charged = true;
+}
+
 function finishAnswerAttempt(teamIndex, timedOut, correct = false, selected = null) {
   const bid = state.bids[teamIndex];
   const amount = bid ? bid.amount : 0;
-  state.scores[teamIndex] += correct ? amount * 2 : -amount;
+  // Tiền cược đã bị trừ khi đội được gọi trả lời; đúng thì nhận thưởng 2 lần tiền cược.
+  if (correct) state.scores[teamIndex] += amount * 2;
   state.lastAttempt = { teamIndex, timedOut, isCorrect: correct };
   stopAnswerTimer();
 
   if (!correct && state.activeResponder?.teamIndex === state.winner?.teamIndex &&
       state.secondBidder && state.secondBidder.teamIndex !== teamIndex) {
     state.activeResponder = { ...state.secondBidder };
+    // Chỉ trừ tiền cược của đội thứ hai khi đội này thực sự được gọi trả lời.
+    chargeBid(state.activeResponder.teamIndex);
     // Chuyển lượt nhưng chờ quản trò chủ động bấm bắt đầu tính giờ.
     state.answerEndsAt = null;
     state.result = null;
@@ -365,6 +375,8 @@ function finishAuction() {
     teamIndex: eligible[1].index,
     teamName: state.settings.teams[eligible[1].index]
   } : null;
+  // Trừ tiền cược của đội thắng ngay khi xác định đội được quyền trả lời.
+  chargeBid(state.winner.teamIndex);
   state.activeResponder = null;
   state.answerEndsAt = null;
   state.lastAttempt = null;
