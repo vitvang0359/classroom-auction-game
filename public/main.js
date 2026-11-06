@@ -418,7 +418,7 @@ function renderSettings() {
   $("settingPoints").value = s.settings.startingPoints;
 
   $("teamSettings").innerHTML = s.settings.teams.map((name, i) => `
-    <label>Tên tổ ${i + 1}</label>
+    <label>${i === 4 ? "Tên Thầy" : `Tên tổ ${i + 1}`}</label>
     <input id="teamName${i}" value="${escapeHTML(name)}">
   `).join("");
 
