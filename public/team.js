@@ -147,7 +147,9 @@ function render(state) {
       $("questionMobileTimer").parentElement.hidden = true;
     }
     $("answerTurnStatus").textContent = state.activeResponder
-      ? "ĐẾN LƯỢT TRẢ LỜI: " + state.activeResponder.teamName
+      ? (!state.answerEndsAt
+          ? "ĐẾN LƯỢT " + state.activeResponder.teamName + " – ĐANG CHỜ QUẢN TRÒ BẮT ĐẦU TÍNH GIỜ."
+          : "ĐẾN LƯỢT TRẢ LỜI: " + state.activeResponder.teamName)
       : (state.phase === "answered" ? "CÂU HỎI ĐÃ KẾT THÚC." : "Đang chờ đội trả lời.");
     return;
   }
