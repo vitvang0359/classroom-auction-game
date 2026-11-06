@@ -32,12 +32,12 @@ const defaultData = {
     answerMultipleSeconds: 15,
     answerOpenSeconds: 30,
     startingPoints: 1000,
-    teams: ["Tổ 1", "Tổ 2", "Tổ 3", "Tổ 4"]
+    teams: ["Tổ 1", "Tổ 2", "Tổ 3", "Tổ 4", "Thầy"]
   },
   questions: [],
   homeImageUrl: null,
-  scores: [1000, 1000, 1000, 1000],
-  claims: [null, null, null, null],
+  scores: [1000, 1000, 1000, 1000, 1000],
+  claims: [null, null, null, null, null],
   currentIndex: 0,
   phase: "home",
   round: 0,
@@ -53,16 +53,32 @@ const defaultData = {
   ended: false
 };
 
+function normalizeState(data) {
+  const normalized = { ...structuredClone(defaultData), ...data };
+  normalized.settings = { ...structuredClone(defaultData.settings), ...(data.settings || {}) };
+  normalized.settings.teams = Array.isArray(normalized.settings.teams)
+    ? normalized.settings.teams.slice(0, 5)
+    : [...defaultData.settings.teams];
+  while (normalized.settings.teams.length < 5) {
+    normalized.settings.teams.push(normalized.settings.teams.length === 4 ? "Thầy" : "Tổ " + (normalized.settings.teams.length + 1));
+  }
+  normalized.scores = Array.isArray(normalized.scores) ? normalized.scores.slice(0, 5) : [];
+  while (normalized.scores.length < 5) normalized.scores.push(normalized.settings.startingPoints);
+  normalized.claims = Array.isArray(normalized.claims) ? normalized.claims.slice(0, 5) : [];
+  while (normalized.claims.length < 5) normalized.claims.push(null);
+  return normalized;
+}
+
 function loadLocalData() {
   try {
     if (fs.existsSync(DATA_FILE)) {
       const saved = JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
-      return { ...structuredClone(defaultData), ...saved };
+      return normalizeState(saved);
     }
   } catch (e) {
     console.error("Khong doc duoc data.json:", e);
   }
-  return structuredClone(defaultData);
+  return normalizeState({});
 }
 
 const SUPABASE_URL = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
@@ -94,7 +110,7 @@ async function loadPersistentData() {
 
   const rows = await response.json();
   if (rows.length && rows[0].state) {
-    state = { ...structuredClone(defaultData), ...rows[0].state };
+    state = normalizeState(rows[0].state);
     console.log("Da tai du lieu game tu Supabase.");
   } else {
     await save();
@@ -204,7 +220,7 @@ function teamSnapshot(teamIndex) {
 function broadcast() {
   io.to("admins").emit("admin-state", adminSnapshot());
 
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < state.settings.teams.length; i++) {
     io.to(`team-${i}`).emit("team-state", teamSnapshot(i));
   }
 }
@@ -402,8 +418,8 @@ app.get("/team", (req, res) => {
 app.post("/api/team/claim", (req, res) => {
   const index = Number(req.body.teamIndex);
 
-  if (!Number.isInteger(index) || index < 0 || index > 3) {
-    return res.status(400).json({ error: "Tổ không hợp lệ." });
+  if (!Number.isInteger(index) || index < 0 || index >= state.settings.teams.length) {
+    return res.status(400).json({ error: "Người chơi không hợp lệ." });
   }
 
   if (state.claims[index]) {
@@ -568,7 +584,7 @@ app.post("/api/admin/settings", requireAdmin, (req, res) => {
     state.settings.startingPoints = n;
   }
 
-  if (Array.isArray(body.teams) && body.teams.length === 4) {
+  if (Array.isArray(body.teams) && body.teams.length === 5) {
     state.settings.teams = body.teams.map(x => String(x).slice(0, 40));
   }
 
@@ -624,7 +640,7 @@ app.post("/api/admin/start", requireAdmin, (req, res) => {
     return res.status(400).json({ error: "Chưa có câu hỏi." });
   }
 
-  state.scores = Array(4).fill(state.settings.startingPoints);
+  state.scores = Array(state.settings.teams.length).fill(state.settings.startingPoints);
   state.currentIndex = 0;
   state.round = 0;
   state.phase = "ready";
@@ -809,7 +825,7 @@ app.post("/api/admin/score", requireAdmin, (req, res) => {
   const i = Number(req.body.teamIndex);
   const delta = Number(req.body.delta);
 
-  if (!Number.isInteger(i) || i < 0 || i > 3 ||
+  if (!Number.isInteger(i) || i < 0 || i >= state.settings.teams.length ||
       !Number.isInteger(delta)) {
     return res.status(400).json({ error: "Dữ liệu điểm không hợp lệ." });
   }
